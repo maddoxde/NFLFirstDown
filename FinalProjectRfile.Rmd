@@ -1,0 +1,150 @@
+---
+title: "Final Project"
+author: "Maddox de Bretteville and Ryan Belkin"
+date: "5/28/2023"
+header-includes:
+   - \usepackage{bbm, amsmath,amsfonts,amsthm,amssymb,mathrsfs,amsxtra,amscd,latexsym, xcolor, graphicx, fvextra}
+   - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
+output: pdf_document
+---
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\Corr}{\mathrm{Corr}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\fix}[1]{\textcolor{red}{\textbf{\large (#1)\normalsize}}}
+
+```{r}
+#in order to run this code, you will need to install these packages. You can do so by going to the install button, or by going to the console and typing, for example, install.packages("knitr")
+suppressPackageStartupMessages(library(knitr)) #makes pdfs
+suppressPackageStartupMessages(library(latex2exp))
+suppressPackageStartupMessages(library(ggplot2)) #makes nice plots
+suppressPackageStartupMessages(library(tidyverse))
+#good library for data manipulation, includes dplyr and ggplot
+# you can read more about the tidyverse at: https://r4ds.had.co.nz/
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Problem 1: Linear Regression Modelling
+
+In this problem, you will use linear regression to explore a sports dataset of your choice. Any dataset with at least 30 observations should suffice. If you need inspiration, see the pinned Ed post with places you might find downloadable data, or use the `Batting' dataframe included in the Lahman package. If you use the Lahman package, use $R$ as the response with $OPS$ and $RC$ as the predictors, using the formualas from class.
+
+## 1.1
+
+Load your dataset into R, and pick three variables, one which will be the response $y$, and two which you will use as predictors $x_1,x_2$. Plot a scatterplot of each of $x_1$ and $x_2$ against $y$, and compute each's correlation with $y$. Do you think linear regression is a good idea? [\textbf{4 points}]
+
+```{r}
+
+library(dplyr)
+NFL = read.csv("pbp-2022.csv")
+NFL_one = filter(NFL, Down == 1, YardLine >= 90, Yards <=10)
+NFL_pass = filter(NFL_one, PlayType == "PASS")
+NFL_rush = filter(NFL, PlayType == "RUSH")
+NFL_Chiefspass = filter(NFL_pass, OffenseTeam == "KC")
+NFL_Chiefsrush = filter(NFL_rush, OffenseTeam == "KC")
+NFL_Steelerspass = filter(NFL_pass, OffenseTeam == "PIT")
+NFL_Steelersrush = filter(NFL_rush, OffenseTeam == "PIT")
+print(mean(NFL_pass$Yards))
+print(mean(NFL_rush$Yards))
+
+```
+
+```{r}
+Center = filter(NFL_rush, RushDirection == "CENTER")
+LeftEnd = filter(NFL_rush, RushDirection == "LEFT END")
+LeftGuard = filter(NFL_rush, RushDirection == "LEFT GUARD")
+LeftTackle = filter(NFL_rush, RushDirection == "LEFT TACKLE")
+RightEnd = filter(NFL_rush, RushDirection == "RIGHT END")
+RightGuard = filter(NFL_rush, RushDirection == "RIGHT GUARD")
+RightTackle = filter(NFL_rush, RushDirection == "RIGHT TACKLE")
+print(mean(Center$Yards))
+print(mean(LeftEnd$Yards))
+print(mean(LeftGuard$Yards))
+print(mean(LeftTackle$Yards))
+print(mean(RightEnd$Yards))
+print(mean(RightGuard$Yards))
+print(mean(RightTackle$Yards))
+```
+
+```{r}
+ShortLeft = filter(NFL_pass, PassType == "SHORT LEFT")
+ShortRight = filter(NFL_pass, PassType == "SHORT RIGHT")
+ShortMid = filter(NFL_pass, PassType == "SHORT MIDDLE")
+print(mean(ShortLeft$Yards))
+print(mean(ShortRight$Yards))
+print(mean(ShortMid$Yards))
+```
+
+
+
+
+```{r}
+
+library(ggplot2)
+ggplot(data = NFL_rush, aes(x = Quarter, y = Yards, color = RushDirection)) + geom_point() + ggtitle("2022 NFL Rush Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = NFL_pass, aes(x = Quarter, y = Yards, color = PassType)) + geom_point() + ggtitle("2022 NFL Pass Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+```{r}
+
+library(ggplot2)
+ggplot(data = NFL_Chiefsrush, aes(x = Quarter, y = Yards, color = RushDirection)) + geom_point() + ggtitle("2022 KC Rush Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = NFL_Chiefspass, aes(x = Quarter, y = Yards, color = PassType)) + geom_point() + ggtitle("2022 KC Pass Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = NFL_Steelersrush, aes(x = Quarter, y = Yards, color = RushDirection)) + geom_point() + ggtitle("2022 PIT Rush Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+ggplot(data = NFL_Steelerspass, aes(x = Quarter, y = Yards, color = PassType)) + geom_point() + ggtitle("2022 PIT Pass Plays on Opponent 10 Yard Line and In" ) + theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+
+
+```{r}
+
+NFL_rush$RushDirection = as.factor(NFL_rush$RushDirection)
+
+encoded_data = model.matrix(~ RushDirection - 1, data = NFL_rush)
+combined_data = data.frame(encoded_data, Yards = NFL_rush$Yards)
+
+rushmodel = lm(Yards ~ ., data = combined_data)
+
+
+summary(rushmodel)
+
+```
+
+
+
+```{r}
+
+NFL_pass$PassType = as.factor(NFL_pass$PassType)
+
+encoded_data = model.matrix(~ PassType - 1, data = NFL_pass)
+combined_data = data.frame(encoded_data, Yards = NFL_pass$Yards)
+
+passmodel = lm(Yards ~ ., data = combined_data)
+
+
+summary(passmodel)
+
+```
+
+```{r}
+
+logisticNFL1 = glm(IsTouchdown ~ IsPass, family = binomial(), data = NFL_one)
+logisticNFL2 = glm(IsTouchdown ~ IsRush, family = binomial(), data = NFL_one)
+summary(logisticNFL1)
+summary(logisticNFL2)
+```
+
+
+
