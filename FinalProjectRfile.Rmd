@@ -28,16 +28,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-# Problem 1: Linear Regression Modelling
-
-In this problem, you will use linear regression to explore a sports dataset of your choice. Any dataset with at least 30 observations should suffice. If you need inspiration, see the pinned Ed post with places you might find downloadable data, or use the `Batting' dataframe included in the Lahman package. If you use the Lahman package, use $R$ as the response with $OPS$ and $RC$ as the predictors, using the formualas from class.
-
-## 1.1
-
-Load your dataset into R, and pick three variables, one which will be the response $y$, and two which you will use as predictors $x_1,x_2$. Plot a scatterplot of each of $x_1$ and $x_2$ against $y$, and compute each's correlation with $y$. Do you think linear regression is a good idea? [\textbf{4 points}]
-
-```{r}
-
 library(dplyr)
 NFL = read.csv("pbp-2022.csv")
 NFL_one = filter(NFL, Down == 1, YardLine >= 90, Yards <=10)
